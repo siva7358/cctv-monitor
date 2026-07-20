@@ -1116,6 +1116,17 @@ document.getElementById('offlineBadge').textContent = 0;
 document.getElementById('deviceCount').textContent = totalDevices;
 
 // ============================================================
+// API CONFIGURATION - CHANGE THIS TO YOUR RENDER.COM URL
+// ============================================================
+
+// Replace this URL with your Render.com API URL
+// Example: https://cctv-api.onrender.com/api/status
+const API_URL = 'https://cctv-api-lvdi.onrender.com';
+
+// For local testing, you can use:
+// const API_URL = 'http://localhost:5000/api/status';
+
+// ============================================================
 // LEAFLET MAP
 // ============================================================
 
@@ -1175,32 +1186,7 @@ function createLabeledMarker(status, jb) {
 }
 
 // ============================================================
-// PING FUNCTION
-// ============================================================
-
-function pingSingleIp(ip) {
-    return new Promise((resolve) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-        fetch(`http://${ip}`, {
-                method: 'HEAD',
-                mode: 'no-cors',
-                signal: controller.signal
-            })
-            .then(() => {
-                clearTimeout(timeoutId);
-                resolve(true);
-            })
-            .catch(() => {
-                clearTimeout(timeoutId);
-                resolve(false);
-            });
-    });
-}
-
-// ============================================================
-// UPDATE ALL DEVICES - PARALLEL PINGING
+// UPDATE ALL DEVICES - FETCH FROM API
 // ============================================================
 
 let isUpdating = false;
@@ -1209,96 +1195,90 @@ async function updateAllDeviceStatuses() {
     if (isUpdating) return;
     isUpdating = true;
 
-    const pingTasks = [];
-    const ipMap = [];
+    try {
+        // Fetch status from API
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        
+        let onlineTotal = 0;
+        let offlineTotal = 0;
+        let onlineDevices = 0;
+        let offlineDevices = 0;
+        let partialDevices = 0;
+        
+        // Update each device with API data
+        data.forEach(apiDevice => {
+            const device = devices.find(d => d.jb === apiDevice.jb);
+            if (device) {
+                device.ipStatuses = apiDevice.ipStatuses;
+                device.onlineCount = apiDevice.onlineCount;
+                device.overallStatus = apiDevice.overallStatus;
+                
+                // Count totals
+                device.ipStatuses.forEach(ip => {
+                    if (ip.status === 'online') onlineTotal++;
+                    else offlineTotal++;
+                });
+                
+                if (device.overallStatus === 'online') onlineDevices++;
+                else if (device.overallStatus === 'offline') offlineDevices++;
+                else if (device.overallStatus === 'partial') partialDevices++;
+                
+                // Update marker
+                const marker = markers.find(m => m.deviceData.jb === device.jb);
+                if (marker) {
+                    const newIcon = createLabeledMarker(device.overallStatus, device.jb);
+                    marker.setIcon(L.divIcon({
+                        html: newIcon.outerHTML,
+                        className: '',
+                        iconSize: [60, 40],
+                        iconAnchor: [30, 40],
+                        popupAnchor: [0, -35]
+                    }));
 
-    for (const device of devices) {
-        for (const ipInfo of device.ipStatuses) {
-            ipInfo.status = 'pinging';
-            ipMap.push({
-                device: device,
-                ipInfo: ipInfo
-            });
-            pingTasks.push(pingSingleIp(ipInfo.ip));
-        }
+                    let ipsHtml = device.ipStatuses.map(ipInfo =>
+                        `<div class="popup-ip-item">
+                            <span class="ip-addr">${ipInfo.ip}</span>
+                            <span class="ip-status ${ipInfo.status}">● ${ipInfo.status.toUpperCase()}</span>
+                        </div>`
+                    ).join('');
+
+                    marker.setPopupContent(`
+                        <div class="popup-content">
+                            <div class="popup-jb">${device.jb}</div>
+                            <div class="popup-location">${device.location}</div>
+                            <div class="popup-divider"></div>
+                            <div style="font-size:11px;color:#8899bb;margin-bottom:4px;">
+                                ${device.onlineCount}/${device.totalCount} cameras online
+                            </div>
+                            ${ipsHtml}
+                            <div class="popup-divider"></div>
+                            <div class="popup-status-text ${device.overallStatus}">● ${device.overallStatus.toUpperCase()}</div>
+                        </div>
+                    `);
+                }
+            }
+        });
+        
+        // Update HUD
+        document.getElementById('onlineCount').textContent = onlineTotal;
+        document.getElementById('offlineCount').textContent = offlineTotal;
+        document.getElementById('partialCount').textContent = totalCameras - onlineTotal - offlineTotal;
+        document.getElementById('onlineBadge').textContent = onlineDevices;
+        document.getElementById('partialBadge').textContent = partialDevices;
+        document.getElementById('offlineBadge').textContent = offlineDevices;
+        
+        // Update time
+        const now = new Date();
+        document.getElementById('lastUpdate').textContent = `Last update: ${now.toLocaleTimeString()}`;
+        
+        renderDeviceList();
+        
+    } catch (error) {
+        console.error('Error fetching status from API:', error);
+        // If API fails, show offline status
+        document.getElementById('lastUpdate').textContent = '⚠️ API Error - Check connection';
     }
-
-    const results = await Promise.all(pingTasks);
-
-    let onlineTotal = 0;
-    let offlineTotal = 0;
-
-    for (let i = 0; i < results.length; i++) {
-        const { device, ipInfo } = ipMap[i];
-        const isOnline = results[i];
-        ipInfo.status = isOnline ? 'online' : 'offline';
-        if (isOnline) onlineTotal++;
-        else offlineTotal++;
-    }
-
-    let onlineDevices = 0;
-    let offlineDevices = 0;
-    let partialDevices = 0;
-
-    for (const device of devices) {
-        const onlineCount = device.ipStatuses.filter(i => i.status === 'online').length;
-        device.onlineCount = onlineCount;
-        device.overallStatus = onlineCount === device.totalCount ? 'online' :
-            onlineCount > 0 ? 'partial' : 'offline';
-
-        if (device.overallStatus === 'online') onlineDevices++;
-        else if (device.overallStatus === 'offline') offlineDevices++;
-        else if (device.overallStatus === 'partial') partialDevices++;
-
-        // Update marker
-        const marker = markers.find(m => m.deviceData.jb === device.jb);
-        if (marker) {
-            const newIcon = createLabeledMarker(device.overallStatus, device.jb);
-            marker.setIcon(L.divIcon({
-                html: newIcon.outerHTML,
-                className: '',
-                iconSize: [60, 40],
-                iconAnchor: [30, 40],
-                popupAnchor: [0, -35]
-            }));
-
-            let ipsHtml = device.ipStatuses.map(ipInfo =>
-                `<div class="popup-ip-item">
-                    <span class="ip-addr">${ipInfo.ip}</span>
-                    <span class="ip-status ${ipInfo.status}">● ${ipInfo.status.toUpperCase()}</span>
-                </div>`
-            ).join('');
-
-            marker.setPopupContent(`
-                <div class="popup-content">
-                    <div class="popup-jb">${device.jb}</div>
-                    <div class="popup-location">${device.location}</div>
-                    <div class="popup-divider"></div>
-                    <div style="font-size:11px;color:#8899bb;margin-bottom:4px;">
-                        ${device.onlineCount}/${device.totalCount} cameras online
-                    </div>
-                    ${ipsHtml}
-                    <div class="popup-divider"></div>
-                    <div class="popup-status-text ${device.overallStatus}">● ${device.overallStatus.toUpperCase()}</div>
-                </div>
-            `);
-        }
-    }
-
-    // Update HUD
-    document.getElementById('onlineCount').textContent = onlineTotal;
-    document.getElementById('offlineCount').textContent = offlineTotal;
-    document.getElementById('partialCount').textContent = totalCameras - onlineTotal - offlineTotal;
-    document.getElementById('onlineBadge').textContent = onlineDevices;
-    document.getElementById('partialBadge').textContent = partialDevices;
-    document.getElementById('offlineBadge').textContent = offlineDevices;
-
-    // Update last update time
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    document.getElementById('lastUpdate').textContent = `Last update: ${timeStr}`;
-
-    renderDeviceList();
 
     isUpdating = false;
 }
@@ -1528,11 +1508,15 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ============================================================
-// INITIAL RENDER & START PINGING
+// INITIAL RENDER & START FETCHING
 // ============================================================
 
 renderDeviceList();
+
+// First update immediately
 updateAllDeviceStatuses();
+
+// Then update every 5 seconds
 setInterval(updateAllDeviceStatuses, 5000);
 
 // ============================================================
@@ -1546,4 +1530,5 @@ window.addEventListener('resize', () => {
 console.log(`✅ CCTV Camera Status System Loaded`);
 console.log(`📍 ${totalDevices} JB locations`);
 console.log(`📹 ${totalCameras} total cameras`);
-console.log(`🔄 Pinging ALL ${totalCameras} IPs simultaneously every 5 seconds...`);
+console.log(`🔄 Fetching status from API every 5 seconds...`);
+console.log(`🔗 API URL: ${API_URL}`);
