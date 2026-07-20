@@ -1,4 +1,12 @@
 // ============================================================
+// API CONFIGURATION - Google Apps Script URL
+// ============================================================
+
+// ⚠️ REPLACE THIS WITH YOUR CORRECT URL
+// URL should look like: https://script.google.com/macros/s/AKfycbxxxxxxxx/exec
+const API_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnT90B4uMI9CFquE3MnHDUD_8zC2Xhv_ZGjm20JSFuxFwGBZNDtheFDLWrvcO9VdTmrm0lV-4rZFi60DSubj3Igx0ZLIQCiTh5f6LXbfm9gGwkYvaY51x4zXfJKncl_JH3AoN94QkzfrInfoGSsjNqEDT3JWuvtDvRcU3NviI5ul4rJR0FQ_6vt6zac-UuN9K1JP1oGHxrQNXhBYl_D7d5RjuCZhdxQSZxAn6krR0eX4Z5ndOBbq2rmTf-MHpW94_bwWmWOuWSSsIQUUFGBuHXBr9EHjdg&lib=MjGNTc5s7Pb9Rv0HM-qOz8WOnEmsZrvz9';
+
+// ============================================================
 // COMPLETE DATA: 180 JB Locations with IPs
 // ============================================================
 
@@ -1116,17 +1124,6 @@ document.getElementById('offlineBadge').textContent = 0;
 document.getElementById('deviceCount').textContent = totalDevices;
 
 // ============================================================
-// API CONFIGURATION - CHANGE THIS TO YOUR RENDER.COM URL
-// ============================================================
-
-// Replace this URL with your Render.com API URL
-// Example: https://cctv-api.onrender.com/api/status
-const API_URL = 'https://cctv-api-lvdi.onrender.com';
-
-// For local testing, you can use:
-// const API_URL = 'http://localhost:5000/api/status';
-
-// ============================================================
 // LEAFLET MAP
 // ============================================================
 
@@ -1186,7 +1183,7 @@ function createLabeledMarker(status, jb) {
 }
 
 // ============================================================
-// UPDATE ALL DEVICES - FETCH FROM API
+// UPDATE ALL DEVICES - FETCH FROM GOOGLE APPS SCRIPT API
 // ============================================================
 
 let isUpdating = false;
@@ -1196,8 +1193,13 @@ async function updateAllDeviceStatuses() {
     isUpdating = true;
 
     try {
-        // Fetch status from API
+        // Fetch status from Google Apps Script API
         const response = await fetch(API_URL);
+        
+        if (!response.ok) {
+            throw new Error(`API returned status: ${response.status}`);
+        }
+        
         const data = await response.json();
         
         let onlineTotal = 0;
@@ -1276,8 +1278,11 @@ async function updateAllDeviceStatuses() {
         
     } catch (error) {
         console.error('Error fetching status from API:', error);
-        // If API fails, show offline status
         document.getElementById('lastUpdate').textContent = '⚠️ API Error - Check connection';
+        
+        // Show error in console
+        console.log('API URL used:', API_URL);
+        console.log('Make sure the URL is correct and deployed properly.');
     }
 
     isUpdating = false;
