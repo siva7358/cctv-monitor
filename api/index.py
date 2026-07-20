@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ============================================================
-# YOUR 180 JB LOCATIONS WITH IPs
+# YOUR 180 JB LOCATIONS - COPY FROM YOUR script.js
 # ============================================================
 
 jb_data = [
@@ -195,11 +195,10 @@ jb_data = [
 ]
 
 # ============================================================
-# PING FUNCTION - Parallel Processing (FAST)
+# PING FUNCTION
 # ============================================================
 
 def ping_ip(ip):
-    """Ping a single IP with timeout"""
     try:
         param = '-n' if platform.system().lower() == 'windows' else '-c'
         cmd = ['ping', param, '1', '-W', '1', ip]
@@ -209,7 +208,6 @@ def ping_ip(ip):
         return False
 
 def ping_all_ips():
-    """Ping all IPs in parallel"""
     results = {}
     with ThreadPoolExecutor(max_workers=50) as executor:
         future_to_ip = {executor.submit(ping_ip, ip): ip for jb in jb_data for ip in jb['ips']}
@@ -219,28 +217,32 @@ def ping_all_ips():
     return results
 
 # ============================================================
-# API ENDPOINT
+# API ENDPOINTS
 # ============================================================
+
+@app.route('/')
+def home():
+    return jsonify({
+        'status': 'online',
+        'message': 'CCTV Camera Monitor API is running!',
+        'total_jb': len(jb_data),
+        'total_cameras': sum(len(jb['ips']) for jb in jb_data)
+    })
 
 @app.route('/api/status')
 def get_status():
     try:
         ping_results = ping_all_ips()
-        
         response_data = []
-        
         for jb in jb_data:
             ip_statuses = []
             online_count = 0
-            
             for ip in jb['ips']:
                 status = 'online' if ping_results.get(ip, False) else 'offline'
                 ip_statuses.append({'ip': ip, 'status': status})
                 if status == 'online':
                     online_count += 1
-            
             overall = 'online' if online_count == len(jb['ips']) else 'partial' if online_count > 0 else 'offline'
-            
             response_data.append({
                 'jb': jb['jb'],
                 'ipStatuses': ip_statuses,
@@ -248,21 +250,9 @@ def get_status():
                 'totalCount': len(jb['ips']),
                 'overallStatus': overall
             })
-        
         return jsonify(response_data)
-        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================================
-# HEALTH CHECK
-# ============================================================
-
-@app.route('/')
-def home():
-    return jsonify({
-        'status': 'online',
-        'message': 'CCTV Camera Monitor API',
-        'total_jb': len(jb_data),
-        'total_cameras': sum(len(jb['ips']) for jb in jb_data)
-    })
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000)
