@@ -4,7 +4,7 @@
 
 // ⚠️ REPLACE THIS WITH YOUR CORRECT URL
 // URL should look like: https://script.google.com/macros/s/AKfycbxxxxxxxx/exec
-const API_URL = 'https://script.google.com/macros/s/AKfycby8EHcQUuNnF4qWIWHecLecbhwUc5l-BH3ZsNsSmjXiSCCxTc4P2IKhbMDNqeic3v6kDw/exec';
+const API_URL = 'https://cctv-monitor.vercel.app/api/status';
 
 // ============================================================
 // COMPLETE DATA: 180 JB Locations with IPs
