@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CCTV Camera Status - Real-Time Monitoring</title>
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+    <!-- ============================================================
+    TOP HUD BAR
+    ============================================================ -->
+    <div class="hud-bar">
+        <div class="hud-left">
+            <div class="hud-icon">🛡️</div>
+            <div>
+                <div class="hud-title">CCTV CAMERA STATUS</div>
+                <div class="hud-title-sub">REAL-TIME MONITORING SYSTEM</div>
+            </div>
+        </div>
+        <div class="hud-stats">
+            <div class="hud-stat active" data-filter="all" id="filterAllTop">
+                <span class="label">Total JB</span>
+                <span class="value total" id="totalJB">0</span>
+            </div>
+            <div class="hud-stat" data-filter="online" id="filterOnlineTop">
+                <span class="status-dot online"></span>
+                <span class="label">Online</span>
+                <span class="value online" id="onlineCount">0</span>
+            </div>
+            <div class="hud-stat" data-filter="partial" id="filterPartialTop">
+                <span class="status-dot partial"></span>
+                <span class="label">Partial</span>
+                <span class="value partial" id="partialCount">0</span>
+            </div>
+            <div class="hud-stat" data-filter="offline" id="filterOfflineTop">
+                <span class="status-dot offline"></span>
+                <span class="label">Offline</span>
+                <span class="value offline" id="offlineCount">0</span>
+            </div>
+            <div class="hud-stat" style="cursor:default;border-color:rgba(0,212,255,0.2);">
+                <span class="label">Total Cam</span>
+                <span class="value total" id="totalCam">0</span>
+            </div>
+            <div class="update-time">
+                <span class="live-dot"></span>
+                <span id="lastUpdate">Waiting for data...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    MAIN LAYOUT
+    ============================================================ -->
+    <div class="main-container">
+
+        <!-- LEFT PANEL -->
+        <div class="device-panel" id="devicePanel">
+
+            <!-- Search & Filters -->
+            <div class="search-section">
+                <div class="search-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search JB, IP, or Location..." />
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all" id="filterAll">All</button>
+                    <button class="filter-btn" data-filter="online" id="filterOnline">
+                        Online <span class="badge online-badge" id="onlineBadge">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="partial" id="filterPartial">
+                        Partial <span class="badge partial-badge" id="partialBadge">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="offline" id="filterOffline">
+                        Offline <span class="badge offline-badge" id="offlineBadge">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Panel Header -->
+            <div class="panel-header">
+                <span class="title">📋 JB-Count</span>
+                <span class="count" id="deviceCount">0</span>
+            </div>
+
+            <!-- Device List -->
+            <div class="device-list-container">
+                <div id="deviceList">
+                    <div class="loading-text">
+                        <span class="spinner"></span> Loading cameras...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAP -->
+        <div id="map"></div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    
+    <!-- Data -->
+    <script src="data/cameras.json">
+    </script>
+    
+    <!-- Main Script -->
+    <script src="assets/js/script.js">
+    </script>
+
+</body>
+</html>
