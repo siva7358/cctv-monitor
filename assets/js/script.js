@@ -4,7 +4,7 @@
 
 // ⚠️ REPLACE THIS WITH YOUR CORRECT URL
 // URL should look like: https://script.google.com/macros/s/AKfycbxxxxxxxx/exec
-const API_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnT90B4uMI9CFquE3MnHDUD_8zC2Xhv_ZGjm20JSFuxFwGBZNDtheFDLWrvcO9VdTmrm0lV-4rZFi60DSubj3Igx0ZLIQCiTh5f6LXbfm9gGwkYvaY51x4zXfJKncl_JH3AoN94QkzfrInfoGSsjNqEDT3JWuvtDvRcU3NviI5ul4rJR0FQ_6vt6zac-UuN9K1JP1oGHxrQNXhBYl_D7d5RjuCZhdxQSZxAn6krR0eX4Z5ndOBbq2rmTf-MHpW94_bwWmWOuWSSsIQUUFGBuHXBr9EHjdg&lib=MjGNTc5s7Pb9Rv0HM-qOz8WOnEmsZrvz9';
+const API_URL = 'https://script.google.com/macros/s/AKfycby8EHcQUuNnF4qWIWHecLecbhwUc5l-BH3ZsNsSmjXiSCCxTc4P2IKhbMDNqeic3v6kDw/exec';
 
 // ============================================================
 // COMPLETE DATA: 180 JB Locations with IPs
